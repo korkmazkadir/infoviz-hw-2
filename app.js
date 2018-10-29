@@ -71,6 +71,28 @@ app.controller("infoVizCtrl", function($scope, $http) {
     }
 
 
+    $scope.resetPlot = function(){
+
+        $scope.options = {
+            showFemale : true,
+            showMale  : true,
+            showSurvived : true,
+            showDead : true
+        };
+
+        $scope.priceSlider.min = $scope.priceSlider.options.floor;
+        $scope.priceSlider.max = $scope.priceSlider.options.ceil;
+        $scope.ageSlider.min = $scope.ageSlider.options.floor;
+        $scope.ageSlider.max = $scope.ageSlider.options.ceil;
+
+        priceSliderValueChange("",$scope.priceSlider.min,$scope.priceSlider.max,"");
+        ageSliderValueChange("",$scope.ageSlider.min,$scope.ageSlider.max,"");
+
+
+      console.log("Reset plot...");
+    }
+
+
     var margin = {top: 20, right: 15, bottom: 20, left: 60}
          , width = 730 - margin.left - margin.right
          , height = 550 - margin.top - margin.bottom;
@@ -79,6 +101,7 @@ app.controller("infoVizCtrl", function($scope, $http) {
     var g;
     var x;
     var y;
+    var main;
 
     // Define the div for the tooltip
     var divTooltip = d3.select("body").append("div")
@@ -102,9 +125,12 @@ app.controller("infoVizCtrl", function($scope, $http) {
                	.append('svg:svg')
                	.attr('width', width + margin.right + margin.left)
                	.attr('height', height + margin.top + margin.bottom)
-               	.attr('class', 'chart')
+               	.attr('class', 'chart crosshair')
+                .on("mousedown", mousedown)
+                .on("mousemove", mousemove)
+                .on("mouseup", mouseup);
 
-       var main = chart.append('g')
+      main = chart.append('g')
              	.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
              	.attr('width', width)
              	.attr('height', height)
@@ -124,13 +150,104 @@ app.controller("infoVizCtrl", function($scope, $http) {
              	.scale(y);
 
        main.append('g')
-   	.attr('transform', 'translate(0,0)')
-   	.attr('class', 'main axis date')
-   	.call(yAxis);
+     	.attr('transform', 'translate(0,0)')
+     	.attr('class', 'main axis date')
+     	.call(yAxis);
 
      g = main.append("svg:g")
                    .attr("class", "dot-container");
 
+    }
+
+    var startPoint = {x:0, y:0};
+    var endPoint = {x:0, y:0};
+    var enableSelection = false;
+    var selectionRect;
+
+    function mousemove(){
+
+      if(enableSelection == false){
+        return;
+      }
+
+      console.log(">> MOVE is working");
+
+      const coordinates = d3.mouse(main.node());
+      endPoint.x = coordinates[0];
+      endPoint.y = coordinates[1];
+
+      var sr = calculateSelectionRectangle(startPoint,endPoint);
+      selectionRect = sr;
+
+      g.select("rect.selection-rectangle")
+          .attr("x", sr.x )
+          .attr("y", sr.y )
+          .attr("width",  sr.width)
+          .attr("height", sr.height);
+
+    }
+
+
+    function calculateSelectionRectangle(startPoint, endPoint){
+      var attributeOfSelectionRect = { x: 0, y: 0, width : 0, height: 0};
+
+      attributeOfSelectionRect.width = Math.abs( startPoint.x - endPoint.x  );
+      attributeOfSelectionRect.height = Math.abs( startPoint.y - endPoint.y );
+
+      if(startPoint.x > endPoint.x && startPoint.y > endPoint.y){
+        attributeOfSelectionRect.x = endPoint.x ;
+        attributeOfSelectionRect.y = endPoint.y ;
+      }else if(startPoint.x < endPoint.x && startPoint.y > endPoint.y){
+        attributeOfSelectionRect.x = endPoint.x - attributeOfSelectionRect.width;
+        attributeOfSelectionRect.y = endPoint.y ;
+      }else if(startPoint.x > endPoint.x && startPoint.y < endPoint.y){
+        attributeOfSelectionRect.x = startPoint.x - attributeOfSelectionRect.width;
+        attributeOfSelectionRect.y = startPoint.y ;
+      } else{
+        attributeOfSelectionRect.x = startPoint.x ;
+        attributeOfSelectionRect.y = startPoint.y ;
+      }
+
+      return attributeOfSelectionRect;
+    }
+
+
+    function mousedown(){
+        console.log(">> DOWN is working");
+        const coordinates = d3.mouse(main.node());
+        startPoint.x = coordinates[0];
+        startPoint.y = coordinates[1];
+        console.log("Start point : " + JSON.stringify(startPoint));
+        enableSelection = true;
+        g.append("rect")
+            .attr("class", "selection-rectangle")
+            .attr("x", startPoint.x )
+            .attr("y", startPoint.y );
+    }
+
+    function mouseup(){
+      console.log(">> UP is working");
+      enableSelection = false;
+
+      const start ={ x : x.invert(selectionRect.x), y : y.invert(selectionRect.y) };
+      const end ={ x : x.invert(selectionRect.x + selectionRect.width), y : y.invert(selectionRect.y + selectionRect.height) };
+
+      $scope.$apply(function () {
+        $scope.priceSlider.min = end.y;
+        $scope.priceSlider.max = start.y;
+
+        $scope.ageSlider.min = start.x;
+        $scope.ageSlider.max = end.x;
+
+        priceSliderValueChange("",$scope.priceSlider.min,$scope.priceSlider.max,"");
+        ageSliderValueChange("",$scope.ageSlider.min,$scope.ageSlider.max,"");
+
+      });
+
+      console.log("Start => X axis : " + start.x  + " Y axis : " +  start.y );
+      console.log("End => X axis : " + end.x  + " Y axis : " +  end.y );
+
+      g.select(".selection-rectangle").remove();
     }
 
 

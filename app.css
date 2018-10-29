@@ -46,9 +46,25 @@ div.tooltip {
   margin:5px;
 }
 
-.dead  { opacity: .25; }
+.dead  {
+  opacity: .25;
+}
 
-.alive { opacity: 1.; fill-opacity:.01; stroke: black; }
+.alive {
+  opacity: 1.;
+  fill-opacity:.01;
+  stroke: black;
+}
+
+.selection-rectangle{
+  opacity: 1.;
+  fill-opacity:.1;
+  fill : red;
+}
+
+.crosshair {
+  cursor: crosshair;
+}
 
 svg text {
     -webkit-user-select: none;

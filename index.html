@@ -59,8 +59,11 @@
         </div>
 
         <div id="age-slider-container" class="row solid-border">
-          <div class="col">
-            <div style=" margin-left:250px; margin-right:100px;">
+          <div class="col-1">
+            <button ng-click="resetPlot()" type="button" class="btn btn-danger btn-sm">Reset Plot</button>
+          </div>
+          <div class="col-11">
+            <div style=" margin-left:200px; margin-right:100px;">
               <rzslider rz-slider-model="ageSlider.min" rz-slider-high="ageSlider.max" rz-slider-options="ageSlider.options"></rzslider>
             </div>
           </div>
