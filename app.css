@@ -27,14 +27,15 @@ input::-webkit-color-swatch {
 div.tooltip {
     position: absolute;
     text-align: center;
-    width: 60px;
-    height: 28px;
+    width: 150px;
+    height: 40px;
     padding: 2px;
     font: 12px sans-serif;
     background: lightsteelblue;
     border: 0px;
     border-radius: 8px;
     pointer-events: none;
+    vertical-align: baseline;
 }
 
 .highlight{

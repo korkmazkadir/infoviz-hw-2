@@ -37,8 +37,8 @@ app.controller("infoVizCtrl", function($scope, $http) {
     $scope.limits = {
       maxAge: -1,
       minAge: 100,
-      maxPrice : -1,
-      minPrice : 10000
+      maxPrice : 1,
+      minPrice : 100000
     }
 
     $scope.options = {
@@ -116,10 +116,10 @@ app.controller("infoVizCtrl", function($scope, $http) {
                   .domain([$scope.limits.minAge, $scope.limits.maxAge])
                   .range([ 0, width ]);
 
-        y = d3.scaleLinear()
+
+        y = d3.scaleLog()
         	      .domain([$scope.limits.minPrice, $scope.limits.maxPrice])
         	      .range([ height, 0 ]);
-
 
        var chart = d3.select('#chart-container')
                	.append('svg:svg')
@@ -169,8 +169,6 @@ app.controller("infoVizCtrl", function($scope, $http) {
       if(enableSelection == false){
         return;
       }
-
-      console.log(">> MOVE is working");
 
       const coordinates = d3.mouse(main.node());
       endPoint.x = coordinates[0];
@@ -250,6 +248,25 @@ app.controller("infoVizCtrl", function($scope, $http) {
       g.select(".selection-rectangle").remove();
     }
 
+    const showToolTip = function(d) {
+          $scope.$apply();
+          divTooltip.transition()
+              .duration(200)
+              .style("opacity", .9);
+
+          divTooltip.html( "<span>" + d.name + "</span>")
+              .style("left", (d3.event.pageX) + "px")
+              .style("top", (d3.event.pageY - 28) + "px");
+
+        };
+
+    const hideToolTip =  function(d) {
+        $scope.$apply();
+        divTooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+    };
+
 
     $scope.drawChart = function(){
 
@@ -269,14 +286,17 @@ app.controller("infoVizCtrl", function($scope, $http) {
             .data(femaleData)
             .enter().append("circle")
                 .attr("cx", function (d,i) { return x( d.age ); } )
-                .attr("cy", function (d) { return y( Math.ceil(d.price) ); } )
+                .attr("cy", function (d) { return y( d.price ); } )
                 .attr("r", 3)
+                .attr("title", function (d) { return d.name; } )
                 .attr("class", function (d) {
                     if(d.survived == 1){
                         return "alive";
                     }
                     return "dead";
-                });
+                })
+                .on("mouseover",showToolTip)
+                .on("mouseout",hideToolTip);
 
         }
 
@@ -285,7 +305,7 @@ app.controller("infoVizCtrl", function($scope, $http) {
             .data(maleData)
             .enter().append("rect")
                 .attr("x", function (d) { return x( d.age ); } )
-                .attr("y", function (d) { return y( Math.ceil(d.price) ); } )
+                .attr("y", function (d) { return y( d.price); } )
                 .attr("width", 5)
                 .attr("height", 5)
                 .attr("class", function (d) {
@@ -293,7 +313,9 @@ app.controller("infoVizCtrl", function($scope, $http) {
                         return "alive";
                     }
                     return "dead";
-                });
+                })
+                .on("mouseover",showToolTip)
+                .on("mouseout",hideToolTip);
         }
 
 
@@ -392,8 +414,13 @@ $scope.statistics = {
         lines.forEach(function(line) {
             var tokens = line.split("\t");
             var obj = createDataObject(tokens[0],tokens[1],tokens[2],tokens[3],tokens[4],tokens[5]);
+
+            if(obj.price === 0){
+              obj.price = obj.price +  1;
+            }
             updateDataLimits(obj);
             $scope.dataset.push(obj);
+
         });
         updateSlidersLimits();
         setCurrentSliderValues();
@@ -411,7 +438,7 @@ $scope.statistics = {
 
     function updateSlidersLimits(){
         $scope.priceSlider.options.floor = $scope.limits.minPrice;
-        $scope.priceSlider.options.ceil  = Math.ceil($scope.limits.maxPrice);
+        $scope.priceSlider.options.ceil  = $scope.limits.maxPrice;
 
         $scope.ageSlider.options.floor  = $scope.limits.minAge;
         $scope.ageSlider.options.ceil = $scope.limits.maxAge;
@@ -442,7 +469,7 @@ $scope.statistics = {
             name : name,
             sex : sex,
             age : Number(age),
-            price : Number(price)
+            price : Math.floor(Number( price ))
         };
     }
 
